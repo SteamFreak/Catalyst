@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — Catalyst</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <style>
+    body { background: var(--beige); display: flex; flex-direction: column; min-height: 100vh; }
+    .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+    .auth-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2.25rem 2rem; width: 100%; max-width: 440px; box-shadow: var(--shadow-md); }
+    .auth-logo { font-size: 1.3rem; font-weight: 700; color: var(--midnight); margin-bottom: 1.5rem; }
+    .auth-logo span { color: var(--steel); }
+    .auth-title { font-size: 1.3rem; font-weight: 700; color: var(--midnight); margin-bottom: 0.3rem; }
+    .auth-sub { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .step-indicator { display: flex; gap: 0.4rem; margin-bottom: 1.5rem; }
+    .step-dot { height: 4px; flex: 1; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+    .step-dot.done { background: var(--midnight); }
+    .avatar-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6rem; margin-bottom: 1.25rem; }
+    .avatar-opt { width: 52px; height: 52px; border-radius: 50%; border: 2.5px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: var(--beige); padding: 0; font-size: 1.8rem; }
+    .avatar-opt.selected { border-color: var(--midnight); background: var(--pale); box-shadow: 0 0 0 3px rgba(36,59,83,0.15); }
+    .err-msg { background: #fee2e2; color: #991b1b; border-radius: var(--radius); padding: 0.6rem 0.9rem; font-size: 0.83rem; margin-bottom: 1rem; display: none; }
+    .err-msg.show { display: block; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="../index.html" class="navbar-brand">Catalyst<span>.</span></a>
+  </div>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">Catalyst<span>.</span></div>
+    <div class="step-indicator">
+      <div class="step-dot done" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+    <div id="err-msg" class="err-msg"></div>
+
+    <!-- STEP 1 -->
+    <div class="step active" id="step-1">
+      <h1 class="auth-title">Create your account</h1>
+      <p class="auth-sub">Start discovering opportunities today.</p>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="reg-name" type="text" placeholder="Your full name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="reg-password" type="password" placeholder="At least 8 characters" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input class="form-input" id="reg-confirm" type="password" placeholder="Repeat your password" />
+      </div>
+      <button class="btn btn-primary btn-full" id="step1-next">Continue</button>
+      <p style="text-align:center;font-size:0.83rem;color:var(--text-muted);margin-top:1rem;">Already have an account? <a href="login.html" style="color:var(--midnight);font-weight:600;">Sign in</a></p>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="step-2">
+      <h1 class="auth-title">Choose your avatar</h1>
+      <p class="auth-sub">Pick an icon that represents you.</p>
+      <div class="avatar-grid" id="avatar-grid"></div>
+      <button class="btn btn-primary btn-full" id="step2-next">Continue</button>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="step-3">
+      <div style="text-align:center;padding:1rem 0;">
+        <div style="margin:0 auto 1rem;width:56px;height:56px;border-radius:50%;background:var(--pale);display:flex;align-items:center;justify-content:center;" id="verify-icon">
+          <svg width="26" height="26" fill="none" stroke="var(--midnight)" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <h1 class="auth-title" style="text-align:center;" id="verify-title">Verify your email</h1>
+        <p class="auth-sub" style="text-align:center;max-width:320px;margin:0 auto 1.5rem;">We've sent a verification link to <strong id="verify-email-display"></strong>. Click the link in your inbox — this page will update automatically.</p>
+        <div id="verify-checking" style="display:flex;align-items:center;justify-content:center;gap:0.5rem;font-size:0.83rem;color:var(--text-muted);margin-bottom:1.25rem;">
+          <div style="width:10px;height:10px;border:2px solid var(--pale);border-top-color:var(--midnight);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
+          Waiting for verification…
+        </div>
+        <a href="login.html" class="btn btn-primary btn-full" style="margin-bottom:0.75rem;">Go to Sign In</a>
+        <button class="btn btn-secondary btn-full" id="resend-btn">Resend Verification Email</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { registerUser, auth } from "../js/auth.js";
+  import { AVATARS } from "../js/avatars.js";
+  import { sendEmailVerification, reload } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  let verifyPollTimer = null;
+
+  let selectedAvatar = 1;
+  const avatarGrid = document.getElementById("avatar-grid");
+  avatarGrid.innerHTML = AVATARS.map((a, i) =>
+    `<button class="avatar-opt ${i === 0 ? 'selected' : ''}" data-i="${i + 1}" title="${a.label}">${a.emoji}</button>`
+  ).join("");
+
+  avatarGrid.querySelectorAll(".avatar-opt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      avatarGrid.querySelectorAll(".avatar-opt").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedAvatar = Number(btn.dataset.i);
+    });
+  });
+
+  function showErr(msg) {
+    const el = document.getElementById("err-msg");
+    el.textContent = msg;
+    el.classList.add("show");
+  }
+  function hideErr() { document.getElementById("err-msg").classList.remove("show"); }
+
+  function goStep(n) {
+    document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+    document.getElementById("step-" + n).classList.add("active");
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById("dot-" + i).classList.toggle("done", i <= n);
+    }
+    hideErr();
+  }
+
+  document.getElementById("step1-next").addEventListener("click", () => {
+    const name = document.getElementById("reg-name").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const pw = document.getElementById("reg-password").value;
+    const cpw = document.getElementById("reg-confirm").value;
+    if (!name) return showErr("Please enter your full name.");
+    if (!email || !/\S+@\S+\.\S+/.test(email)) return showErr("Please enter a valid email.");
+    if (pw.length < 8) return showErr("Password must be at least 8 characters.");
+    if (pw !== cpw) return showErr("Passwords do not match.");
+    goStep(2);
+  });
+
+  document.getElementById("step2-next").addEventListener("click", async () => {
+    const name = document.getElementById("reg-name").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const pw = document.getElementById("reg-password").value;
+    const btn = document.getElementById("step2-next");
+    btn.disabled = true;
+    btn.textContent = "Creating account…";
+    try {
+      await registerUser(name, email, pw, selectedAvatar);
+      document.getElementById("verify-email-display").textContent = email;
+      goStep(3);
+      startVerifyPolling();
+    } catch(e) {
+      const msgs = {
+        "auth/email-already-in-use": "An account with this email already exists.",
+        "auth/invalid-email": "Invalid email address.",
+        "auth/weak-password": "Password is too weak.",
+      };
+      showErr(msgs[e.code] || "Registration failed. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Continue";
+    }
+  });
+
+  function startVerifyPolling() {
+    verifyPollTimer = setInterval(async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        await reload(user);
+        if (user.emailVerified) {
+          clearInterval(verifyPollTimer);
+          sessionStorage.setItem("cat_user", JSON.stringify({
+            initial: (user.displayName || user.email)[0].toUpperCase(),
+            avatar: selectedAvatar
+          }));
+          document.getElementById("verify-icon").style.background = "#d1fae5";
+          document.getElementById("verify-icon").innerHTML = `<svg width="26" height="26" fill="none" stroke="#065f46" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`;
+          document.getElementById("verify-title").textContent = "Email verified!";
+          document.getElementById("verify-checking").innerHTML = `<span style="color:#065f46;font-weight:600;">Verified — redirecting to dashboard…</span>`;
+          setTimeout(() => { window.location.href = "../dashboard.html"; }, 1200);
+        }
+      } catch(_) {}
+    }, 3000);
+  }
+
+  document.getElementById("resend-btn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (user) {
+      await sendEmailVerification(user);
+      document.getElementById("resend-btn").textContent = "Email sent!";
+      setTimeout(() => document.getElementById("resend-btn").textContent = "Resend Verification Email", 3000);
+    }
+  });
+</script>
+</body>
+</html>

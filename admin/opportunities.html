@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Opportunities — Catalyst Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">
+      <div class="brand-name">Catalyst<span style="color:var(--pale);">.</span></div>
+      <div class="brand-sub">Admin Panel</div>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </a>
+      <a href="opportunities.html" class="active">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Opportunities
+      </a>
+      <a href="queries.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Student Queries
+      </a>
+      <a href="faqs.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        FAQ Management
+      </a>
+      <a href="contact.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+        Contact Info
+      </a>
+      <a href="team.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Team
+      </a>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <button class="btn btn-secondary btn-sm btn-full" id="signout-btn">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Manage Opportunities</h1>
+      <div class="admin-topbar-right">
+        <button class="btn btn-primary btn-sm" id="add-btn">+ Add Opportunity</button>
+      </div>
+    </div>
+    <div class="admin-content">
+      <!-- FILTERS -->
+      <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;">
+        <div class="search-bar" style="flex:1;min-width:200px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="form-input" id="search-input" type="text" placeholder="Search opportunities…" style="padding-left:2.25rem;" />
+        </div>
+        <select class="form-select" id="filter-status" style="width:140px;">
+          <option value="">All Status</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+        <select class="form-select" id="filter-category" style="width:160px;">
+          <option value="">All Categories</option>
+          <option>Internship</option><option>Research</option><option>Competition</option>
+          <option>Course</option><option>Workshop</option><option>Scholarship</option>
+          <option>Fellowship</option><option>Summer Programme</option><option>Volunteering</option><option>Other</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.83rem;color:var(--text-secondary);">
+          <input type="checkbox" id="show-expired" /> Show expired
+        </label>
+      </div>
+
+      <div class="admin-table-wrap">
+        <div id="opps-table"><div class="loading-overlay"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Add Opportunity</h2>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="f-title" /></div>
+        <div class="form-group"><label class="form-label">Organisation *</label><input class="form-input" id="f-org" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category *</label>
+          <select class="form-select" id="f-category">
+            <option value="">Select</option>
+            <option>Internship</option><option>Research</option><option>Competition</option>
+            <option>Course</option><option>Workshop</option><option>Scholarship</option>
+            <option>Fellowship</option><option>Summer Programme</option><option>Volunteering</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Mode *</label>
+          <select class="form-select" id="f-mode"><option value="">Select</option><option>Online</option><option>Offline</option><option>Hybrid</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Short Description *</label><textarea class="form-textarea" id="f-short-desc" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Detailed Description</label><textarea class="form-textarea" id="f-desc" rows="4"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Academic Stream</label><input class="form-input" id="f-stream" placeholder="e.g. Science, Commerce, Any" /></div>
+        <div class="form-group"><label class="form-label">Eligible Classes</label><input class="form-input" id="f-classes" placeholder="e.g. Grade 9-12, UG" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Age Restriction</label><input class="form-input" id="f-age" placeholder="e.g. 15-25 years" /></div>
+        <div class="form-group"><label class="form-label">Duration</label><input class="form-input" id="f-duration" placeholder="e.g. 6 weeks" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Paid / Free</label>
+          <select class="form-select" id="f-paid"><option value="">Select</option><option>Free</option><option>Paid</option><option>Stipend</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Fees</label><input class="form-input" id="f-fees" placeholder="e.g. ₹500" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Stipend</label><input class="form-input" id="f-stipend" placeholder="e.g. ₹5000/month" /></div>
+        <div class="form-group"><label class="form-label">Location</label><input class="form-input" id="f-location" placeholder="e.g. Mumbai, Remote" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="f-start" type="date" /></div>
+        <div class="form-group"><label class="form-label">End Date</label><input class="form-input" id="f-end" type="date" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Application Deadline *</label><input class="form-input" id="f-deadline" type="date" /></div>
+      <div class="form-group"><label class="form-label">Application URL</label><input class="form-input" id="f-app-url" type="url" placeholder="https://…" /></div>
+      <div class="form-group"><label class="form-label">Eligibility Criteria</label><textarea class="form-textarea" id="f-eligibility" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Requirements</label><input class="form-input" id="f-requirements" /></div>
+      <div class="form-group"><label class="form-label">Required Skills</label><input class="form-input" id="f-skills" /></div>
+      <div class="form-group"><label class="form-label">Contact Details</label><input class="form-input" id="f-contact" /></div>
+      <div class="form-group"><label class="form-label">Additional Information</label><textarea class="form-textarea" id="f-additional" rows="2"></textarea></div>
+      <div class="form-group"><label class="form-label">Source / Verification URL</label><input class="form-input" id="f-source" type="url" placeholder="https://…" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="save-draft-btn">Save as Draft</button>
+      <button class="btn btn-primary" id="save-publish-btn">Save & Publish</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { requireAdmin, logoutUser } from "../js/auth.js";
+  import { formatDate, showToast, confirmDialog } from "../js/utils.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { firebaseConfig } from "../js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  await requireAdmin();
+  document.getElementById("signout-btn").addEventListener("click", logoutUser);
+
+  let allOpps = [], editingId = null;
+
+  async function loadOpps() {
+    const snap = await getDocs(query(collection(db, "opportunities"), orderBy("createdAt", "desc")));
+    allOpps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable();
+  }
+
+  function renderTable() {
+    const search = document.getElementById("search-input").value.trim().toLowerCase();
+    const statusF = document.getElementById("filter-status").value;
+    const catF = document.getElementById("filter-category").value;
+    const showExp = document.getElementById("show-expired").checked;
+    const now = Date.now();
+
+    let items = allOpps.filter(o => {
+      const dl = o.deadline ? (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) : null;
+      const expired = dl && dl < now;
+      if (!showExp && expired) return false;
+      if (statusF && o.status !== statusF) return false;
+      if (catF && o.category !== catF) return false;
+      if (search && !`${o.title} ${o.organisation}`.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    const el = document.getElementById("opps-table");
+    if (!items.length) { el.innerHTML = `<div class="empty-state"><p>No opportunities found.</p></div>`; return; }
+
+    el.innerHTML = `<table><thead><tr><th>Title</th><th>Organisation</th><th>Category</th><th>Mode</th><th>Status</th><th>Deadline</th><th>Actions</th></tr></thead>
+    <tbody>${items.map(o => {
+      const dl = o.deadline ? (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) : null;
+      const expired = dl && dl < now;
+      const statusLabel = expired && o.status === "published" ? "expired" : o.status;
+      const sc = { published:"status-published", draft:"status-draft", expired:"status-expired" }[statusLabel] || "status-draft";
+      return `<tr>
+        <td style="font-weight:600;max-width:200px;">${o.title || ''}</td>
+        <td>${o.organisation || ''}</td>
+        <td>${o.category || ''}</td>
+        <td>${o.mode || ''}</td>
+        <td><span class="status-badge ${sc}">${statusLabel}</span></td>
+        <td style="font-size:0.83rem;">${dl ? dl.toLocaleDateString("en-IN") : '—'}</td>
+        <td>
+          <div style="display:flex;gap:0.35rem;">
+            <button class="btn btn-sm" style="background:var(--beige);border:none;" data-edit="${o.id}">Edit</button>
+            ${o.status === 'draft' ? `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;border:none;" data-publish="${o.id}">Publish</button>` : ''}
+            ${o.status === 'published' ? `<button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:none;" data-unpublish="${o.id}">Unpublish</button>` : ''}
+            <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:none;" data-delete="${o.id}">Delete</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+
+    el.querySelectorAll("[data-edit]").forEach(b => openModal(b.dataset.edit));
+    el.querySelectorAll("[data-publish]").forEach(b => b.addEventListener("click", () => updateStatus(b.dataset.publish, "published")));
+    el.querySelectorAll("[data-unpublish]").forEach(b => b.addEventListener("click", () => updateStatus(b.dataset.unpublish, "draft")));
+    el.querySelectorAll("[data-delete]").forEach(b => b.addEventListener("click", () => deleteOpp(b.dataset.delete)));
+  }
+
+  async function updateStatus(id, status) {
+    await updateDoc(doc(db, "opportunities", id), { status });
+    const o = allOpps.find(x => x.id === id);
+    if (o) o.status = status;
+    renderTable();
+    showToast(`Opportunity ${status === 'published' ? 'published' : 'unpublished'}.`, "success");
+  }
+
+  async function deleteOpp(id) {
+    if (!confirmDialog("Delete this opportunity? This cannot be undone.")) return;
+    await deleteDoc(doc(db, "opportunities", id));
+    allOpps = allOpps.filter(o => o.id !== id);
+    renderTable();
+    showToast("Deleted.");
+  }
+
+  function openModal(id = null) {
+    editingId = id;
+    const o = id ? allOpps.find(x => x.id === id) : null;
+    document.getElementById("modal-title").textContent = id ? "Edit Opportunity" : "Add Opportunity";
+    const fields = { title:"f-title", organisation:"f-org", category:"f-category", mode:"f-mode", shortDescription:"f-short-desc", description:"f-desc", stream:"f-stream", eligibleClasses:"f-classes", ageRestriction:"f-age", duration:"f-duration", paid:"f-paid", fees:"f-fees", stipend:"f-stipend", location:"f-location", applicationUrl:"f-app-url", eligibility:"f-eligibility", requirements:"f-requirements", skills:"f-skills", contactDetails:"f-contact", additionalInfo:"f-additional", sourceUrl:"f-source" };
+    for (const [key, fid] of Object.entries(fields)) {
+      const el = document.getElementById(fid);
+      if (el) el.value = o?.[key] || "";
+    }
+    // Dates
+    const toDateInput = (ts) => { if (!ts) return ""; const d = ts.toDate ? ts.toDate() : new Date(ts); return d.toISOString().split("T")[0]; };
+    document.getElementById("f-start").value = toDateInput(o?.startDate);
+    document.getElementById("f-end").value = toDateInput(o?.endDate);
+    document.getElementById("f-deadline").value = toDateInput(o?.deadline);
+    document.getElementById("modal-overlay").classList.add("open");
+  }
+
+  async function saveOpp(status) {
+    const title = document.getElementById("f-title").value.trim();
+    const org = document.getElementById("f-org").value.trim();
+    const category = document.getElementById("f-category").value;
+    const mode = document.getElementById("f-mode").value;
+    const shortDesc = document.getElementById("f-short-desc").value.trim();
+    const deadline = document.getElementById("f-deadline").value;
+    if (!title || !org || !category || !mode || !shortDesc) { showToast("Please fill in all required fields.", "error"); return; }
+
+    const toTs = (val) => val ? Timestamp.fromDate(new Date(val)) : null;
+
+    const data = {
+      title, organisation: org, category, mode, shortDescription: shortDesc,
+      description: document.getElementById("f-desc").value.trim(),
+      stream: document.getElementById("f-stream").value.trim(),
+      eligibleClasses: document.getElementById("f-classes").value.trim(),
+      ageRestriction: document.getElementById("f-age").value.trim(),
+      duration: document.getElementById("f-duration").value.trim(),
+      paid: document.getElementById("f-paid").value,
+      fees: document.getElementById("f-fees").value.trim(),
+      stipend: document.getElementById("f-stipend").value.trim(),
+      location: document.getElementById("f-location").value.trim(),
+      applicationUrl: document.getElementById("f-app-url").value.trim(),
+      eligibility: document.getElementById("f-eligibility").value.trim(),
+      requirements: document.getElementById("f-requirements").value.trim(),
+      skills: document.getElementById("f-skills").value.trim(),
+      contactDetails: document.getElementById("f-contact").value.trim(),
+      additionalInfo: document.getElementById("f-additional").value.trim(),
+      sourceUrl: document.getElementById("f-source").value.trim(),
+      startDate: toTs(document.getElementById("f-start").value),
+      endDate: toTs(document.getElementById("f-end").value),
+      deadline: toTs(deadline),
+      status,
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "opportunities", editingId), data);
+        const idx = allOpps.findIndex(o => o.id === editingId);
+        if (idx !== -1) allOpps[idx] = { id: editingId, ...data };
+      } else {
+        data.createdAt = serverTimestamp();
+        const ref = await addDoc(collection(db, "opportunities"), data);
+        allOpps.unshift({ id: ref.id, ...data });
+      }
+      document.getElementById("modal-overlay").classList.remove("open");
+      renderTable();
+      showToast(status === "published" ? "Published successfully!" : "Saved as draft.", "success");
+    } catch(e) { showToast("Save failed. Try again.", "error"); }
+  }
+
+  document.getElementById("add-btn").addEventListener("click", () => openModal());
+  document.getElementById("modal-close").addEventListener("click", () => document.getElementById("modal-overlay").classList.remove("open"));
+  document.getElementById("modal-overlay").addEventListener("click", e => { if (e.target === document.getElementById("modal-overlay")) document.getElementById("modal-overlay").classList.remove("open"); });
+  document.getElementById("save-draft-btn").addEventListener("click", () => saveOpp("draft"));
+  document.getElementById("save-publish-btn").addEventListener("click", () => saveOpp("published"));
+  document.getElementById("search-input").addEventListener("input", renderTable);
+  document.getElementById("filter-status").addEventListener("change", renderTable);
+  document.getElementById("filter-category").addEventListener("change", renderTable);
+  document.getElementById("show-expired").addEventListener("change", renderTable);
+
+  // Fix edit button binding
+  document.getElementById("opps-table").addEventListener("click", e => {
+    const editBtn = e.target.closest("[data-edit]");
+    if (editBtn) openModal(editBtn.dataset.edit);
+  });
+
+  loadOpps();
+</script>
+</body>
+</html>

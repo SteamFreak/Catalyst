@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>You're offline — Catalyst</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    body {
+      background: var(--midnight);
+      color: var(--offwhite);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid rgba(255,253,248,0.08);
+      flex-shrink: 0;
+    }
+    .top-bar .brand { font-size: 1.2rem; font-weight: 700; }
+    .top-bar .brand span { color: var(--pale); }
+    .offline-pill {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: rgba(255,253,248,0.07);
+      border: 1px solid rgba(255,253,248,0.12);
+      border-radius: 99px; padding: 0.3rem 0.8rem;
+      font-size: 0.78rem; color: rgba(255,253,248,0.6);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+    .status-dot.online { background: #10b981; }
+    #online-banner {
+      display: none; background: #065f46; text-align: center;
+      padding: 0.6rem; font-size: 0.875rem; font-weight: 600; color: #d1fae5;
+    }
+    #online-banner a { color: #a7f3d0; text-decoration: underline; }
+
+    /* INTRO */
+    #screen-intro {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 2rem 1.5rem; gap: 1.25rem;
+    }
+    #screen-intro h1 { font-size: 2rem; font-weight: 700; line-height: 1.25; }
+    #screen-intro h1 span { color: var(--pale); }
+    #screen-intro p { color: rgba(255,253,248,0.65); max-width: 480px; line-height: 1.7; font-size: 0.95rem; }
+    .start-btn {
+      background: var(--offwhite); color: var(--midnight);
+      border: none; border-radius: var(--radius);
+      padding: 0.75rem 2rem; font-size: 1rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background 0.2s;
+    }
+    .start-btn:hover { background: var(--beige); }
+
+    /* GAME */
+    #screen-game { display: none; flex: 1; flex-direction: column; }
+    .game-header {
+      padding: 0.65rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,253,248,0.08); flex-shrink: 0;
+    }
+    .game-instruction { font-size: 0.875rem; color: rgba(255,253,248,0.65); }
+    .game-instruction strong { color: var(--offwhite); }
+    .game-score { font-size: 0.83rem; color: rgba(255,253,248,0.45); }
+    #canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: crosshair; min-height: 300px; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* RESULT */
+    #screen-result {
+      display: none; flex: 1; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem 1.5rem; gap: 1.25rem; text-align: center;
+    }
+    #screen-result h2 { font-size: 1.6rem; font-weight: 700; }
+    #screen-result h2 span { color: var(--pale); }
+    .result-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 560px; }
+    .result-tag {
+      border-radius: 99px; padding: 0.3rem 0.85rem;
+      font-size: 0.83rem; color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+    }
+    .prompt-box {
+      background: rgba(255,253,248,0.06);
+      border: 1px solid rgba(255,253,248,0.15);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem; max-width: 600px; width: 100%; text-align: left;
+    }
+    .prompt-box-label {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--pale); margin-bottom: 0.6rem;
+    }
+    .prompt-text { font-size: 0.9rem; color: rgba(255,253,248,0.85); line-height: 1.65; font-style: italic; }
+    .result-btns { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+    .btn-copy {
+      background: var(--offwhite); color: var(--midnight);
+      border: none; border-radius: var(--radius);
+      padding: 0.55rem 1.25rem; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: background 0.2s;
+    }
+    .btn-copy:hover { background: var(--beige); }
+    .btn-ghost {
+      background: transparent; border: 1.5px solid rgba(255,253,248,0.25);
+      color: var(--offwhite); border-radius: var(--radius);
+      padding: 0.55rem 1.25rem; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all 0.2s; text-decoration: none;
+      display: inline-flex; align-items: center;
+    }
+    .btn-ghost:hover { background: rgba(255,253,248,0.08); }
+  </style>
+</head>
+<body>
+
+<div id="online-banner">You're back online — <a href="index.html">go back to Catalyst</a></div>
+
+<div class="top-bar">
+  <div class="brand">Catalyst<span>.</span></div>
+  <div class="offline-pill">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">No internet</span>
+  </div>
+</div>
+
+<!-- INTRO -->
+<div id="screen-intro">
+  <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+    <circle cx="30" cy="30" r="30" fill="rgba(255,253,248,0.06)"/>
+    <line x1="16" y1="16" x2="44" y2="44" stroke="rgba(255,253,248,0.35)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M24 20a13 13 0 0 1 16 16" stroke="rgba(255,253,248,0.35)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <path d="M19 25a18 18 0 0 0-2 5" stroke="rgba(255,253,248,0.2)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <circle cx="30" cy="40" r="2.5" fill="rgba(255,253,248,0.45)"/>
+  </svg>
+  <h1>You're offline.<br><span>Let's make it fun.</span></h1>
+  <p>Balloons of different opportunity types will float up. <strong style="color:var(--offwhite);">Pop the ones you don't want.</strong> Let the ones you like escape. At the end, we'll write you a ready-to-use AI prompt based on what survived.</p>
+  <button class="start-btn" id="start-btn">Start the game</button>
+</div>
+
+<!-- GAME -->
+<div id="screen-game">
+  <div class="game-header">
+    <div class="game-instruction"><strong>Click / tap</strong> to pop what you <strong>don't</strong> want &nbsp;·&nbsp; Let the rest float away</div>
+    <div class="game-score" id="game-score">0 popped</div>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="game-canvas"></canvas>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result">
+  <h2>Your opportunity <span>profile</span></h2>
+  <p style="color:rgba(255,253,248,0.55);font-size:0.875rem;">These are the types you kept alive:</p>
+  <div class="result-tags" id="result-tags"></div>
+  <div class="prompt-box">
+    <div class="prompt-box-label">Your AI prompt — copy and use anywhere</div>
+    <div class="prompt-text" id="prompt-text"></div>
+  </div>
+  <div class="result-btns">
+    <button class="btn-copy" id="copy-btn">Copy Prompt</button>
+    <button class="btn-ghost" id="play-again-btn">Play Again</button>
+    <a href="index.html" class="btn-ghost">Back to Catalyst</a>
+  </div>
+</div>
+
+<script>
+// ── ONLINE DETECTION ──
+window.addEventListener("online", () => {
+  document.getElementById("online-banner").style.display = "block";
+  document.getElementById("status-dot").classList.add("online");
+  document.getElementById("status-text").textContent = "Back online";
+});
+
+// ── DATA ──
+const TYPES = [
+  { label: "Internship",            color: "#3B82F6" },
+  { label: "Research",              color: "#10B981" },
+  { label: "Competition",           color: "#F59E0B" },
+  { label: "Course",                color: "#8B5CF6" },
+  { label: "Workshop",              color: "#06B6D4" },
+  { label: "Scholarship",           color: "#EC4899" },
+  { label: "Fellowship",            color: "#0EA5E9" },
+  { label: "Volunteering",          color: "#F97316" },
+  { label: "Summer Programme",      color: "#A855F7" },
+  { label: "Paid / Stipend",        color: "#14B8A6" },
+  { label: "Free",                  color: "#84CC16" },
+  { label: "Online",                color: "#6366F1" },
+  { label: "Offline / In-person",   color: "#EF4444" },
+  { label: "Short-term",            color: "#FBBF24" },
+  { label: "Long-term",             color: "#0369A1" },
+];
+
+// ── CANVAS SETUP ──
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
+let W, H;
+
+function resize() {
+  const wrap = document.getElementById("canvas-wrap");
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+}
+
+// ── BALLOON CLASS ──
+class Balloon {
+  constructor(type) {
+    this.type = type;
+    this.r = Math.min(W, H) * 0.09 + Math.random() * 8;
+    this.x = this.r * 1.2 + Math.random() * (W - this.r * 2.4);
+    this.y = H + this.r + Math.random() * 80;
+    this.vy = -(0.55 + Math.random() * 0.65);
+    this.vx = (Math.random() - 0.5) * 0.35;
+    this.wobble = Math.random() * Math.PI * 2;
+    this.alive = true;
+    this.popping = false;
+    this.popT = 0;
+    this.particles = [];
+    this.escaped = false;
+    this.popped = false;
+  }
+
+  update() {
+    if (this.popping) {
+      this.popT += 0.065;
+      this.particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.life -= 0.055;
+      });
+      if (this.popT >= 1) this.alive = false;
+      return;
+    }
+    this.wobble += 0.022;
+    this.x += this.vx + Math.sin(this.wobble) * 0.28;
+    this.y += this.vy;
+    if (this.y + this.r < -10) {
+      this.alive = false;
+      this.escaped = true;
+    }
+  }
+
+  pop() {
+    if (this.popping) return;
+    this.popping = true;
+    this.popped = true;
+    for (let i = 0; i < 12; i++) {
+      const a = (Math.PI * 2 / 12) * i;
+      this.particles.push({
+        x: this.x, y: this.y,
+        vx: Math.cos(a) * (1.5 + Math.random() * 2.5),
+        vy: Math.sin(a) * (1.5 + Math.random() * 2.5),
+        life: 1,
+      });
+    }
+  }
+
+  draw() {
+    if (this.popping) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - this.popT * 1.5);
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r * (1 + this.popT * 0.6), 0, Math.PI * 2);
+      ctx.fillStyle = this.type.color;
+      ctx.fill();
+      ctx.restore();
+      this.particles.forEach(p => {
+        if (p.life <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = p.life * 0.9;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = this.type.color;
+        ctx.fill();
+        ctx.restore();
+      });
+      return;
+    }
+
+    // Drop shadow
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.beginPath();
+    ctx.ellipse(this.x + 3, this.y + 3, this.r, this.r * 0.95, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#000";
+    ctx.fill();
+    ctx.restore();
+
+    // Body
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = this.type.color;
+    ctx.fill();
+
+    // Shine
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.x - this.r * 0.3, this.y - this.r * 0.3, this.r * 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.32)";
+    ctx.fill();
+    ctx.restore();
+
+    // Knot
+    ctx.beginPath();
+    ctx.arc(this.x, this.y + this.r - 1, 3, 0, Math.PI * 2);
+    ctx.fillStyle = this.type.color;
+    ctx.fill();
+
+    // String
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y + this.r + 2);
+    ctx.quadraticCurveTo(this.x + 5, this.y + this.r + 16, this.x + 1, this.y + this.r + 30);
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Label
+    ctx.save();
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const fs = Math.max(9, Math.floor(this.r * 0.27));
+    ctx.font = `700 ${fs}px DM Sans,sans-serif`;
+    const words = this.type.label.split(" ");
+    if (words.length <= 2) {
+      const line1 = words[0];
+      const line2 = words.slice(1).join(" ");
+      if (line2) {
+        ctx.fillText(line1, this.x, this.y - fs * 0.55);
+        ctx.fillText(line2, this.x, this.y + fs * 0.55);
+      } else {
+        ctx.fillText(line1, this.x, this.y);
+      }
+    } else {
+      const mid = Math.ceil(words.length / 2);
+      ctx.fillText(words.slice(0, mid).join(" "), this.x, this.y - fs * 0.55);
+      ctx.fillText(words.slice(mid).join(" "), this.x, this.y + fs * 0.55);
+    }
+    ctx.restore();
+  }
+
+  hits(px, py) {
+    return Math.hypot(px - this.x, py - this.y) <= this.r;
+  }
+}
+
+// ── GAME STATE ──
+let balloons = [];
+let survived = [];
+let poppedCount = 0;
+let gameRunning = false;
+let raf;
+let doneCheckTimer;
+
+function startGame() {
+  cancelAnimationFrame(raf);
+  clearTimeout(doneCheckTimer);
+  balloons = [];
+  survived = [];
+  poppedCount = 0;
+  gameRunning = true;
+  document.getElementById("game-score").textContent = "0 popped";
+  resize();
+
+  // Stagger spawn all 15 balloons
+  TYPES.forEach((t, i) => {
+    setTimeout(() => {
+      if (gameRunning) balloons.push(new Balloon(t));
+    }, i * 550);
+  });
+
+  // After last balloon spawned + float time, end game
+  const totalTime = TYPES.length * 550 + 7000;
+  doneCheckTimer = setTimeout(() => {
+    if (gameRunning) endGame();
+  }, totalTime);
+
+  raf = requestAnimationFrame(loop);
+}
+
+function loop() {
+  ctx.clearRect(0, 0, W, H);
+  balloons.forEach(b => b.update());
+  balloons.forEach(b => b.draw());
+  // Remove dead balloons, track escaped
+  balloons = balloons.filter(b => {
+    if (!b.alive && b.escaped && !survived.find(s => s.label === b.type.label)) {
+      survived.push(b.type);
+    }
+    return b.alive;
+  });
+  raf = requestAnimationFrame(loop);
+}
+
+function endGame() {
+  gameRunning = false;
+  cancelAnimationFrame(raf);
+  clearTimeout(doneCheckTimer);
+  // Any still floating = survived
+  balloons.forEach(b => {
+    if (!b.popped && !survived.find(s => s.label === b.type.label)) {
+      survived.push(b.type);
+    }
+  });
+  if (survived.length === 0) {
+    // All popped — give them a general prompt
+    survived = TYPES.slice(0, 3);
+  }
+  showResult();
+}
+
+function showResult() {
+  document.getElementById("screen-game").style.display = "none";
+  const el = document.getElementById("screen-result");
+  el.style.display = "flex";
+
+  document.getElementById("result-tags").innerHTML = survived.map(t =>
+    `<span class="result-tag" style="background:${t.color}22;border-color:${t.color}55;">${t.label}</span>`
+  ).join("");
+
+  document.getElementById("prompt-text").textContent = buildPrompt(survived.map(t => t.label));
+}
+
+function buildPrompt(types) {
+  const list = types.join(", ");
+  return `I am a school student looking to build my academic and professional profile. I am specifically interested in the following types of opportunities: ${list}. Please suggest 5 real, currently active opportunities that match these types. For each opportunity, include: the name, the organising body, eligibility criteria, application deadline if known, and a direct link to apply or learn more. Focus on opportunities open to high school students in India.`;
+}
+
+// ── INPUT ──
+function handleClick(cx, cy) {
+  if (!gameRunning) return;
+  for (let i = balloons.length - 1; i >= 0; i--) {
+    const b = balloons[i];
+    if (!b.popping && b.hits(cx, cy)) {
+      b.pop();
+      poppedCount++;
+      document.getElementById("game-score").textContent = `${poppedCount} popped`;
+      break;
+    }
+  }
+}
+
+canvas.addEventListener("click", e => {
+  const r = canvas.getBoundingClientRect();
+  handleClick((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * (H / r.height));
+});
+
+canvas.addEventListener("touchstart", e => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  Array.from(e.changedTouches).forEach(t => {
+    handleClick((t.clientX - r.left) * (W / r.width), (t.clientY - r.top) * (H / r.height));
+  });
+}, { passive: false });
+
+window.addEventListener("resize", () => { if (gameRunning) resize(); });
+
+// ── BUTTONS ──
+document.getElementById("start-btn").addEventListener("click", () => {
+  document.getElementById("screen-intro").style.display = "none";
+  document.getElementById("screen-game").style.display = "flex";
+  startGame();
+});
+
+document.getElementById("play-again-btn").addEventListener("click", () => {
+  document.getElementById("screen-result").style.display = "none";
+  document.getElementById("screen-game").style.display = "flex";
+  startGame();
+});
+
+document.getElementById("copy-btn").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("prompt-text").textContent).then(() => {
+    const btn = document.getElementById("copy-btn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy Prompt", 2000);
+  });
+});
+</script>
+</body>
+</html>

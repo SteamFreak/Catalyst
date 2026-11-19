@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQ Management — Catalyst Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">
+      <div class="brand-name">Catalyst<span style="color:var(--pale);">.</span></div>
+      <div class="brand-sub">Admin Panel</div>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </a>
+      <a href="opportunities.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Opportunities
+      </a>
+      <a href="queries.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Student Queries
+      </a>
+      <a href="faqs.html" class="active">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        FAQ Management
+      </a>
+      <a href="contact.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+        Contact Info
+      </a>
+      <a href="team.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Team
+      </a>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <button class="btn btn-secondary btn-sm btn-full" id="signout-btn">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>FAQ Management</h1>
+      <div class="admin-topbar-right">
+        <button class="btn btn-primary btn-sm" id="add-btn">+ Add FAQ</button>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div class="admin-table-wrap">
+        <div id="faq-table"><div class="loading-overlay"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2 id="modal-title">Add FAQ</h2>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="f-category">
+          <option value="">Select</option>
+          <option>Opportunities</option><option>Internships</option><option>Courses</option>
+          <option>Competitions</option><option>Research</option><option>Eligibility</option>
+          <option>Applications</option><option>Profile Development</option><option>Catalyst Account Assistance</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Question</label>
+        <input class="form-input" id="f-question" type="text" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Answer</label>
+        <textarea class="form-textarea" id="f-answer" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Order (lower = first)</label>
+        <input class="form-input" id="f-order" type="number" value="0" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-close-2">Cancel</button>
+      <button class="btn btn-primary" id="save-btn">Save FAQ</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { requireAdmin, logoutUser } from "../js/auth.js";
+  import { showToast, confirmDialog } from "../js/utils.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { firebaseConfig } from "../js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  await requireAdmin();
+  document.getElementById("signout-btn").addEventListener("click", logoutUser);
+
+  let allFaqs = [], editingId = null;
+
+  async function loadFaqs() {
+    const snap = await getDocs(query(collection(db, "faqs"), orderBy("order", "asc")));
+    allFaqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable();
+  }
+
+  function renderTable() {
+    const el = document.getElementById("faq-table");
+    if (!allFaqs.length) { el.innerHTML = `<div class="empty-state"><p>No FAQs yet. Add your first FAQ.</p></div>`; return; }
+    el.innerHTML = `<table><thead><tr><th>Order</th><th>Category</th><th>Question</th><th>Actions</th></tr></thead>
+    <tbody>${allFaqs.map(f => `<tr>
+      <td style="color:var(--text-muted);">${f.order ?? 0}</td>
+      <td>${f.category || ''}</td>
+      <td style="font-weight:500;max-width:300px;">${f.question || ''}</td>
+      <td><div style="display:flex;gap:0.35rem;">
+        <button class="btn btn-sm" style="background:var(--beige);border:none;" data-edit="${f.id}">Edit</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b;border:none;" data-delete="${f.id}">Delete</button>
+      </div></td>
+    </tr>`).join("")}</tbody></table>`;
+
+    el.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => openModal(b.dataset.edit)));
+    el.querySelectorAll("[data-delete]").forEach(b => b.addEventListener("click", () => deleteFaq(b.dataset.delete)));
+  }
+
+  function openModal(id = null) {
+    editingId = id;
+    const f = id ? allFaqs.find(x => x.id === id) : null;
+    document.getElementById("modal-title").textContent = id ? "Edit FAQ" : "Add FAQ";
+    document.getElementById("f-category").value = f?.category || "";
+    document.getElementById("f-question").value = f?.question || "";
+    document.getElementById("f-answer").value = f?.answer || "";
+    document.getElementById("f-order").value = f?.order ?? 0;
+    document.getElementById("modal-overlay").classList.add("open");
+  }
+
+  document.getElementById("save-btn").addEventListener("click", async () => {
+    const category = document.getElementById("f-category").value;
+    const question = document.getElementById("f-question").value.trim();
+    const answer = document.getElementById("f-answer").value.trim();
+    const order = parseInt(document.getElementById("f-order").value) || 0;
+    if (!category || !question || !answer) { showToast("Please fill all fields.", "error"); return; }
+    const data = { category, question, answer, order, updatedAt: serverTimestamp() };
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "faqs", editingId), data);
+        const idx = allFaqs.findIndex(f => f.id === editingId);
+        if (idx !== -1) allFaqs[idx] = { id: editingId, ...data };
+      } else {
+        data.createdAt = serverTimestamp();
+        const ref = await addDoc(collection(db, "faqs"), data);
+        allFaqs.push({ id: ref.id, ...data });
+        allFaqs.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      }
+      document.getElementById("modal-overlay").classList.remove("open");
+      renderTable();
+      showToast("FAQ saved.", "success");
+    } catch(e) { showToast("Save failed.", "error"); }
+  });
+
+  async function deleteFaq(id) {
+    if (!confirmDialog("Delete this FAQ?")) return;
+    await deleteDoc(doc(db, "faqs", id));
+    allFaqs = allFaqs.filter(f => f.id !== id);
+    renderTable();
+    showToast("Deleted.");
+  }
+
+  const closeModal = () => document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  document.getElementById("modal-close-2").addEventListener("click", closeModal);
+  document.getElementById("add-btn").addEventListener("click", () => openModal());
+
+  loadFaqs();
+</script>
+</body>
+</html>

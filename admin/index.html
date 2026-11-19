@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Catalyst</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar-brand">
+      <div class="brand-name">Catalyst<span style="color:var(--pale);">.</span></div>
+      <div class="brand-sub">Admin Panel</div>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html" class="active">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </a>
+      <a href="opportunities.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Opportunities
+      </a>
+      <a href="queries.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Student Queries
+      </a>
+      <a href="faqs.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        FAQ Management
+      </a>
+      <a href="contact.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+        Contact Info
+      </a>
+      <a href="team.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Team
+      </a>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <button class="btn btn-secondary btn-sm btn-full" id="signout-btn">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Overview</h1>
+      <div class="admin-topbar-right">
+        <span id="admin-name" style="font-size:0.875rem;color:var(--text-secondary);"></span>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-card"><div class="stat-icon blue"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div><div><div class="stat-value" id="s-total">—</div><div class="stat-label">Total Opportunities</div></div></div>
+        <div class="stat-card"><div class="stat-icon green"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="stat-value" id="s-published">—</div><div class="stat-label">Published</div></div></div>
+        <div class="stat-card"><div class="stat-icon amber"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="stat-value" id="s-draft">—</div><div class="stat-label">Drafts</div></div></div>
+        <div class="stat-card"><div class="stat-icon red"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="stat-value" id="s-expired">—</div><div class="stat-label">Expired</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><div class="stat-value" id="s-queries">—</div><div class="stat-label">Total Queries</div></div></div>
+        <div class="stat-card"><div class="stat-icon blue"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div class="stat-value" id="s-new-queries">—</div><div class="stat-label">New Queries</div></div></div>
+        <div class="stat-card"><div class="stat-icon amber"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><div class="stat-value" id="s-pending">—</div><div class="stat-label">Pending Queries</div></div></div>
+        <div class="stat-card"><div class="stat-icon green"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="stat-value" id="s-faqs">—</div><div class="stat-label">FAQs</div></div></div>
+      </div>
+
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h2>Recent Opportunities</h2>
+          <a href="opportunities.html" class="btn btn-primary btn-sm">Manage All</a>
+        </div>
+        <div id="recent-opps"><div class="loading-overlay"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { requireAdmin, logoutUser } from "../js/auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { formatDate } from "../js/utils.js";
+  import { firebaseConfig } from "../js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const { user } = await requireAdmin();
+  document.getElementById("admin-name").textContent = user.displayName || user.email;
+  document.getElementById("signout-btn").addEventListener("click", logoutUser);
+
+  async function loadStats() {
+    const [oppsSnap, queriesSnap, faqsSnap] = await Promise.all([
+      getDocs(collection(db, "opportunities")),
+      getDocs(collection(db, "queries")),
+      getDocs(collection(db, "faqs")),
+    ]);
+
+    const opps = oppsSnap.docs.map(d => d.data());
+    const now = Date.now();
+    const published = opps.filter(o => o.status === "published");
+    const expired = published.filter(o => o.deadline && (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) < now);
+    const drafts = opps.filter(o => o.status === "draft");
+    const queries = queriesSnap.docs.map(d => d.data());
+    const newQ = queries.filter(q => q.status === "New");
+    const pendingQ = queries.filter(q => q.status === "Pending");
+
+    document.getElementById("s-total").textContent = opps.length;
+    document.getElementById("s-published").textContent = published.length;
+    document.getElementById("s-draft").textContent = drafts.length;
+    document.getElementById("s-expired").textContent = expired.length;
+    document.getElementById("s-queries").textContent = queries.length;
+    document.getElementById("s-new-queries").textContent = newQ.length;
+    document.getElementById("s-pending").textContent = pendingQ.length;
+    document.getElementById("s-faqs").textContent = faqsSnap.size;
+  }
+
+  async function loadRecentOpps() {
+    const el = document.getElementById("recent-opps");
+    const snap = await getDocs(query(collection(db, "opportunities"), orderBy("createdAt", "desc"), limit(8)));
+    if (snap.empty) { el.innerHTML = `<div class="empty-state"><p>No opportunities yet.</p></div>`; return; }
+    const now = Date.now();
+    el.innerHTML = `<table><thead><tr><th>Title</th><th>Organisation</th><th>Category</th><th>Status</th><th>Deadline</th></tr></thead>
+    <tbody>${snap.docs.map(d => {
+      const o = d.data();
+      const dl = o.deadline ? (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) : null;
+      const expired = dl && dl < now;
+      const statusLabel = expired && o.status === "published" ? "expired" : o.status;
+      const sc = { published: "status-published", draft: "status-draft", expired: "status-expired" }[statusLabel] || "status-draft";
+      return `<tr>
+        <td style="font-weight:600;">${o.title || ''}</td>
+        <td>${o.organisation || ''}</td>
+        <td>${o.category || ''}</td>
+        <td><span class="status-badge ${sc}">${statusLabel}</span></td>
+        <td style="font-size:0.83rem;">${dl ? dl.toLocaleDateString("en-IN") : '—'}</td>
+      </tr>`;
+    }).join("")}</tbody></table>`;
+  }
+
+  loadStats();
+  loadRecentOpps();
+</script>
+</body>
+</html>

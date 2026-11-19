@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Catalyst</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .dash-layout { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
+    .dash-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.25rem; }
+    .dash-card h2 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 1rem; }
+    .deadline-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    .deadline-item:last-child { border-bottom: none; }
+    .deadline-item .title { font-weight: 600; color: var(--midnight); }
+    .deadline-item .days { font-size: 0.78rem; font-weight: 600; }
+    .days.urgent { color: #c0392b; }
+    .days.soon { color: #92400e; }
+    .days.ok { color: #065f46; }
+    @media (max-width: 900px) { .dash-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <h1 id="dash-welcome">Dashboard</h1>
+    <p>Your personalised opportunity hub.</p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    <div class="dash-layout">
+      <div>
+        <!-- RECOMMENDED -->
+        <div class="dash-card">
+          <h2>Recommended for You</h2>
+          <div id="recommended-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+            <div class="loading-overlay" style="grid-column:1/-1;"><div class="spinner"></div></div>
+          </div>
+        </div>
+        <!-- RECENTLY ADDED -->
+        <div class="dash-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h2 style="margin-bottom:0;">Recently Added</h2>
+            <a href="discover.html" style="font-size:0.8rem;color:var(--steel);">View all →</a>
+          </div>
+          <div id="recent-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+            <div class="loading-overlay" style="grid-column:1/-1;"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- UPCOMING DEADLINES -->
+        <div class="dash-card">
+          <h2>Upcoming Deadlines</h2>
+          <div id="deadlines-list"><div class="spinner"></div></div>
+        </div>
+        <!-- QUICK LINKS -->
+        <div class="dash-card">
+          <h2>Quick Links</h2>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;">
+            <a href="discover.html" class="btn btn-secondary btn-sm">Browse Opportunities</a>
+            <a href="find-opportunity.html" class="btn btn-secondary btn-sm">Find My Opportunity</a>
+            <a href="my-opportunities.html" class="btn btn-secondary btn-sm">My Tracker</a>
+            <a href="profile-development.html" class="btn btn-secondary btn-sm">Submit a Query</a>
+          </div>
+        </div>
+        <!-- SAVED COUNT -->
+        <div class="dash-card" style="text-align:center;">
+          <div style="font-size:2rem;font-weight:700;color:var(--midnight);" id="saved-count">—</div>
+          <div style="font-size:0.83rem;color:var(--text-muted);">Saved Opportunities</div>
+          <a href="my-opportunities.html" style="font-size:0.8rem;color:var(--steel);margin-top:0.5rem;display:block;">View tracker →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" id="main-footer"></footer>
+
+<script type="module">
+  import { initNavbar } from "./js/navbar.js";
+  import { initFooter } from "./js/footer.js";
+  import { requireAuth, logoutUser, getUserProfile } from "./js/auth.js";
+  import { categoryBadgeClass, deadlineLabel, truncate, showToast } from "./js/utils.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { firebaseConfig } from "./js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  initNavbar("", "");
+  initFooter("");
+  const user = await requireAuth();
+  const profile = await getUserProfile(user.uid);
+  const initial = (user.displayName || user.email)[0].toUpperCase();
+  document.getElementById("dash-welcome").textContent = `Welcome back, ${user.displayName || 'Student'}.`;
+
+  // Load saved count
+  const savedSnap = await getDocs(collection(db, "users", user.uid, "savedOpportunities"));
+  document.getElementById("saved-count").textContent = savedSnap.size;
+  const savedIds = new Set(savedSnap.docs.map(d => d.id));
+
+  // Upcoming deadlines from saved
+  const deadlineItems = savedSnap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(o => o.deadline)
+    .sort((a, b) => {
+      const da = a.deadline.toDate ? a.deadline.toDate() : new Date(a.deadline);
+      const db2 = b.deadline.toDate ? b.deadline.toDate() : new Date(b.deadline);
+      return da - db2;
+    })
+    .slice(0, 5);
+
+  const dlList = document.getElementById("deadlines-list");
+  if (deadlineItems.length === 0) {
+    dlList.innerHTML = `<p style="font-size:0.83rem;color:var(--text-muted);">No saved opportunities with deadlines.</p>`;
+  } else {
+    dlList.innerHTML = deadlineItems.map(o => {
+      const d = o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline);
+      const days = Math.ceil((d - Date.now()) / 86400000);
+      const cls = days < 0 ? '' : days <= 3 ? 'urgent' : days <= 10 ? 'soon' : 'ok';
+      const label = days < 0 ? 'Expired' : days === 0 ? 'Today' : `${days}d left`;
+      return `<div class="deadline-item">
+        <div>
+          <div class="title">${o.title || 'Opportunity'}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">${o.organisation || ''}</div>
+        </div>
+        <span class="days ${cls}">${label}</span>
+      </div>`;
+    }).join("");
+  }
+
+  // Recommended (rule-based: match profile interests/categories)
+  async function loadRecommended() {
+    const grid = document.getElementById("recommended-grid");
+    try {
+      let q;
+      if (profile?.preferredCategories?.length) {
+        q = query(collection(db, "opportunities"), where("status", "==", "published"), where("category", "in", profile.preferredCategories.slice(0,10)), orderBy("createdAt", "desc"), limit(4));
+      } else {
+        q = query(collection(db, "opportunities"), where("status", "==", "published"), orderBy("createdAt", "desc"), limit(4));
+      }
+      const snap = await getDocs(q);
+      if (snap.empty) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>No recommendations yet. <a href="discover.html">Browse all</a></p></div>`; return; }
+      grid.innerHTML = snap.docs.map(d => miniCard(d.id, d.data(), savedIds)).join("");
+    } catch(e) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>Could not load.</p></div>`; }
+  }
+
+  async function loadRecent() {
+    const grid = document.getElementById("recent-grid");
+    try {
+      const snap = await getDocs(query(collection(db, "opportunities"), where("status", "==", "published"), orderBy("createdAt", "desc"), limit(4)));
+      grid.innerHTML = snap.empty
+        ? `<div class="empty-state" style="grid-column:1/-1;"><p>No opportunities yet.</p></div>`
+        : snap.docs.map(d => miniCard(d.id, d.data(), savedIds)).join("");
+    } catch(e) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>Could not load.</p></div>`; }
+  }
+
+  function miniCard(id, o, savedIds) {
+    const dl = deadlineLabel(o.deadline);
+    return `<div class="opp-card" style="font-size:0.85rem;">
+      <div class="opp-card-title" style="font-size:0.9rem;">${o.title || ''}</div>
+      <div class="opp-card-org">${o.organisation || ''}</div>
+      <div class="opp-card-meta" style="margin-top:0.4rem;">
+        <span class="badge ${categoryBadgeClass(o.category)}">${o.category || ''}</span>
+      </div>
+      <div class="opp-card-deadline" style="font-size:0.75rem;">${dl}</div>
+      <div class="opp-card-actions">
+        <a href="opportunity.html?id=${id}" class="btn btn-primary btn-sm btn-full">View</a>
+      </div>
+    </div>`;
+  }
+
+  loadRecommended();
+  loadRecent();
+</script>
+</body>
+</html>

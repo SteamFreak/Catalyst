@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAQs — Catalyst</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .faq-item { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.5rem; background: var(--white); overflow: hidden; }
+    .faq-question { width: 100%; background: none; border: none; padding: 1rem 1.25rem; text-align: left; font-size: 0.9rem; font-weight: 600; color: var(--midnight); display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; }
+    .faq-question:hover { background: var(--beige); }
+    .faq-icon { font-size: 1.1rem; color: var(--steel); flex-shrink: 0; transition: transform 0.2s; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-answer { display: none; padding: 0 1.25rem 1rem; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.75; }
+    .faq-item.open .faq-answer { display: block; }
+    .faq-category-title { font-size: 1rem; font-weight: 700; color: var(--midnight); margin: 1.75rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <h1>Frequently Asked Questions</h1>
+    <p>Find answers to common questions about Catalyst and opportunities.</p>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container-sm">
+    <div id="faq-content"><div class="loading-overlay"><div class="spinner"></div></div></div>
+    <div style="margin-top:2.5rem;text-align:center;padding:1.5rem;background:var(--beige);border-radius:var(--radius-lg);">
+      <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.75rem;">Didn't find your answer?</p>
+      <a href="contact.html" class="btn btn-primary btn-sm">Contact Us</a>
+      <a href="profile-development.html#submit-query" class="btn btn-secondary btn-sm" style="margin-left:0.5rem;">Submit a Query</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" id="main-footer"></footer>
+
+<script type="module">
+  import { initNavbar } from "./js/navbar.js";
+  import { initFooter } from "./js/footer.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { firebaseConfig } from "./js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  initNavbar("faqs", "");
+  initFooter("");
+
+  async function loadFAQs() {
+    const el = document.getElementById("faq-content");
+    try {
+      const snap = await getDocs(query(collection(db, "faqs"), orderBy("order", "asc")));
+      if (snap.empty) {
+        el.innerHTML = `<div class="empty-state"><h3>No FAQs yet.</h3><p>Check back soon.</p></div>`;
+        return;
+      }
+      // Group by category
+      const grouped = {};
+      snap.docs.forEach(d => {
+        const f = d.data();
+        if (!grouped[f.category]) grouped[f.category] = [];
+        grouped[f.category].push(f);
+      });
+
+      let html = "";
+      for (const [cat, items] of Object.entries(grouped)) {
+        html += `<div class="faq-category-title">${cat}</div>`;
+        items.forEach(f => {
+          html += `<div class="faq-item">
+            <button class="faq-question">${f.question}<span class="faq-icon">+</span></button>
+            <div class="faq-answer">${f.answer}</div>
+          </div>`;
+        });
+      }
+      el.innerHTML = html;
+
+      el.querySelectorAll(".faq-question").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const item = btn.closest(".faq-item");
+          const wasOpen = item.classList.contains("open");
+          el.querySelectorAll(".faq-item").forEach(i => i.classList.remove("open"));
+          if (!wasOpen) item.classList.add("open");
+        });
+      });
+    } catch(e) {
+      el.innerHTML = `<div class="empty-state"><p>Could not load FAQs.</p></div>`;
+    }
+  }
+
+  loadFAQs();
+</script>
+</body>
+</html>

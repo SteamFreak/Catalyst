@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Catalyst</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <style>
+    body { background: var(--beige); display: flex; flex-direction: column; min-height: 100vh; }
+    .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+    .auth-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2.25rem 2rem; width: 100%; max-width: 420px; box-shadow: var(--shadow-md); }
+    .auth-logo { font-size: 1.3rem; font-weight: 700; color: var(--midnight); margin-bottom: 1.5rem; }
+    .auth-logo span { color: var(--steel); }
+    .auth-title { font-size: 1.3rem; font-weight: 700; color: var(--midnight); margin-bottom: 0.3rem; }
+    .auth-sub { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .err-msg { background: #fee2e2; color: #991b1b; border-radius: var(--radius); padding: 0.6rem 0.9rem; font-size: 0.83rem; margin-bottom: 1rem; display: none; }
+    .err-msg.show { display: block; }
+    .verify-notice { background: #fef3c7; color: #92400e; border-radius: var(--radius); padding: 0.75rem 0.9rem; font-size: 0.83rem; margin-bottom: 1rem; display: none; }
+    .verify-notice.show { display: block; }
+    .success-notice { background: #d1fae5; color: #065f46; border-radius: var(--radius); padding: 0.75rem 0.9rem; font-size: 0.83rem; margin-bottom: 1rem; display: none; }
+    .success-notice.show { display: block; }
+    .view { display: none; }
+    .view.active { display: block; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="../index.html" class="navbar-brand">Catalyst<span>.</span></a>
+  </div>
+</nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">Catalyst<span>.</span></div>
+
+    <!-- SIGN IN VIEW -->
+    <div class="view active" id="view-login">
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">Sign in to your Catalyst account.</p>
+      <div id="err-msg" class="err-msg"></div>
+      <div id="verify-notice" class="verify-notice">
+        Your email is not verified yet. Please check your inbox and click the verification link.
+        <br><button id="resend-verify" style="margin-top:0.5rem;background:none;border:none;color:#92400e;font-weight:600;cursor:pointer;font-size:0.83rem;padding:0;text-decoration:underline;">Resend verification email</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" id="login-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+          <label class="form-label" style="margin-bottom:0;">Password</label>
+          <button type="button" id="forgot-link" style="background:none;border:none;font-size:0.8rem;color:var(--steel);cursor:pointer;padding:0;font-family:inherit;">Forgot password?</button>
+        </div>
+        <input class="form-input" id="login-password" type="password" placeholder="Your password" />
+      </div>
+      <button class="btn btn-primary btn-full" id="login-btn" style="margin-bottom:1rem;">Sign In</button>
+      <p style="text-align:center;font-size:0.83rem;color:var(--text-muted);">Don't have an account? <a href="register.html" style="color:var(--midnight);font-weight:600;">Get started</a></p>
+    </div>
+
+    <!-- RESET PASSWORD VIEW -->
+    <div class="view" id="view-reset">
+      <h1 class="auth-title">Reset password</h1>
+      <p class="auth-sub">Enter your email and we'll send you a reset link.</p>
+      <div id="reset-err" class="err-msg"></div>
+      <div id="reset-success" class="success-notice"></div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" id="reset-email" type="email" placeholder="you@example.com" />
+      </div>
+      <button class="btn btn-primary btn-full" id="reset-btn" style="margin-bottom:1rem;">Send Reset Link</button>
+      <p style="text-align:center;font-size:0.83rem;color:var(--text-muted);"><button type="button" id="back-to-login" style="background:none;border:none;color:var(--midnight);font-weight:600;cursor:pointer;font-size:0.83rem;font-family:inherit;">← Back to Sign In</button></p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { loginUser, auth } from "../js/auth.js";
+  import { sendEmailVerification, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  // ── VIEW SWITCHING ──
+  function showView(id) {
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+  document.getElementById("forgot-link").addEventListener("click", () => {
+    document.getElementById("reset-email").value = document.getElementById("login-email").value;
+    showView("view-reset");
+  });
+  document.getElementById("back-to-login").addEventListener("click", () => showView("view-login"));
+
+  // ── SIGN IN ──
+  function showErr(msg) {
+    const el = document.getElementById("err-msg");
+    el.textContent = msg; el.classList.add("show");
+    document.getElementById("verify-notice").classList.remove("show");
+  }
+  function showVerifyNotice() {
+    document.getElementById("verify-notice").classList.add("show");
+    document.getElementById("err-msg").classList.remove("show");
+  }
+
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const pw = document.getElementById("login-password").value;
+    if (!email) return showErr("Please enter your email.");
+    if (!pw) return showErr("Please enter your password.");
+    const btn = document.getElementById("login-btn");
+    btn.disabled = true; btn.textContent = "Signing in…";
+    try {
+      await loginUser(email, pw);
+      window.location.href = "../dashboard.html";
+    } catch(e) {
+      if (e.code === "auth/email-not-verified") {
+        showVerifyNotice();
+      } else {
+        const msgs = {
+          "auth/user-not-found": "No account found with this email.",
+          "auth/wrong-password": "Incorrect password.",
+          "auth/invalid-credential": "Invalid email or password.",
+          "auth/too-many-requests": "Too many attempts. Please try again later.",
+        };
+        showErr(msgs[e.code] || "Sign in failed. Please try again.");
+      }
+    } finally {
+      btn.disabled = false; btn.textContent = "Sign In";
+    }
+  });
+  document.getElementById("login-password").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("login-btn").click();
+  });
+
+  document.getElementById("resend-verify").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const pw = document.getElementById("login-password").value;
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, pw);
+      if (!cred.user.emailVerified) {
+        await sendEmailVerification(cred.user);
+        document.getElementById("resend-verify").textContent = "Sent! Check your inbox.";
+      }
+    } catch(_) {
+      document.getElementById("resend-verify").textContent = "Could not resend. Try again.";
+    }
+  });
+
+  // ── PASSWORD RESET ──
+  document.getElementById("reset-btn").addEventListener("click", async () => {
+    const email = document.getElementById("reset-email").value.trim();
+    const errEl = document.getElementById("reset-err");
+    const okEl = document.getElementById("reset-success");
+    errEl.classList.remove("show"); okEl.classList.remove("show");
+    if (!email) { errEl.textContent = "Please enter your email."; errEl.classList.add("show"); return; }
+    const btn = document.getElementById("reset-btn");
+    btn.disabled = true; btn.textContent = "Sending…";
+    try {
+      await sendPasswordResetEmail(auth, email);
+      okEl.textContent = `Reset link sent to ${email}. Check your inbox (and spam folder).`;
+      okEl.classList.add("show");
+      btn.textContent = "Sent!";
+    } catch(e) {
+      const msgs = {
+        "auth/user-not-found": "No account found with this email.",
+        "auth/invalid-email": "Invalid email address.",
+        "auth/too-many-requests": "Too many attempts. Try again later.",
+      };
+      errEl.textContent = msgs[e.code] || "Could not send reset email. Try again.";
+      errEl.classList.add("show");
+      btn.disabled = false; btn.textContent = "Send Reset Link";
+    }
+  });
+  document.getElementById("reset-email").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("reset-btn").click();
+  });
+</script>
+</body>
+</html>

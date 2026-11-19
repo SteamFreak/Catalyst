@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discover Opportunities — Catalyst</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .discover-layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start; }
+    .filter-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; position: sticky; top: 80px; }
+    .filter-panel h3 { font-size: 0.85rem; font-weight: 700; color: var(--midnight); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-group { margin-bottom: 1.25rem; }
+    .filter-group label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+    .filter-check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-primary); margin-bottom: 0.35rem; cursor: pointer; }
+    .filter-check input { accent-color: var(--midnight); }
+    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .results-count { font-size: 0.875rem; color: var(--text-muted); }
+    .opp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .search-row { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .search-row input { flex: 1; }
+    @media (max-width: 900px) { .discover-layout { grid-template-columns: 1fr; } .filter-panel { position: static; } .opp-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="page-header">
+  <div class="container">
+    <h1>Discover Opportunities</h1>
+    <p>Browse internships, research programmes, courses, competitions and more.</p>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container">
+    <div class="search-row">
+      <input class="form-input" id="search-input" type="text" placeholder="Search by title, organisation or keyword…" />
+      <button class="btn btn-primary" id="search-btn">Search</button>
+      <button class="btn btn-secondary" id="clear-btn">Clear</button>
+    </div>
+    <div class="discover-layout">
+      <!-- FILTERS -->
+      <aside class="filter-panel">
+        <h3>Filters</h3>
+        <div class="filter-group">
+          <label>Category</label>
+          <div id="filter-categories"></div>
+        </div>
+        <div class="filter-group">
+          <label>Mode</label>
+          <label class="filter-check"><input type="checkbox" name="mode" value="Online" /> Online</label>
+          <label class="filter-check"><input type="checkbox" name="mode" value="Offline" /> Offline</label>
+          <label class="filter-check"><input type="checkbox" name="mode" value="Hybrid" /> Hybrid</label>
+        </div>
+        <div class="filter-group">
+          <label>Fees</label>
+          <label class="filter-check"><input type="checkbox" name="paid" value="Free" /> Free</label>
+          <label class="filter-check"><input type="checkbox" name="paid" value="Paid" /> Paid</label>
+          <label class="filter-check"><input type="checkbox" name="paid" value="Stipend" /> Stipend</label>
+        </div>
+        <div class="filter-group">
+          <label>Sort By</label>
+          <select class="form-select" id="sort-select">
+            <option value="newest">Recently Added</option>
+            <option value="deadline">Deadline Approaching</option>
+            <option value="alpha">Alphabetical</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-check"><input type="checkbox" id="hide-expired" checked /> Hide expired</label>
+        </div>
+        <button class="btn btn-secondary btn-full btn-sm" id="apply-filters">Apply Filters</button>
+      </aside>
+
+      <!-- RESULTS -->
+      <div>
+        <div class="results-header">
+          <span class="results-count" id="results-count">Loading…</span>
+        </div>
+        <div id="opp-grid" class="opp-grid"></div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" id="main-footer"></footer>
+
+<script type="module">
+  import { initNavbar } from "./js/navbar.js";
+  import { initFooter } from "./js/footer.js";
+  import { auth } from "./js/auth.js";
+  import { categoryBadgeClass, deadlineLabel, truncate, showToast } from "./js/utils.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, where, orderBy, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { firebaseConfig } from "./js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  initNavbar("discover", "");
+  initFooter("");
+
+  const CATEGORIES = ["Internship","Research","Competition","Course","Workshop","Scholarship","Fellowship","Summer Programme","Volunteering","Other"];
+  const PAGE_SIZE = 12;
+  let allOpps = [], filtered = [], currentPage = 1, currentUser = null, savedIds = new Set();
+
+  // Populate category filters
+  document.getElementById("filter-categories").innerHTML = CATEGORIES.map(c =>
+    `<label class="filter-check"><input type="checkbox" name="category" value="${c}" /> ${c}</label>`
+  ).join("");
+
+  // URL params
+  const params = new URLSearchParams(location.search);
+  if (params.get("q")) document.getElementById("search-input").value = params.get("q");
+  if (params.get("category")) {
+    const cb = document.querySelector(`input[name="category"][value="${params.get("category")}"]`);
+    if (cb) cb.checked = true;
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user && user.emailVerified ? user : null;
+    if (currentUser) {
+      const snap = await getDocs(collection(db, "users", currentUser.uid, "savedOpportunities"));
+      snap.forEach(d => savedIds.add(d.id));
+    }
+    await loadOpps();
+  });
+
+  async function loadOpps() {
+    document.getElementById("opp-grid").innerHTML = `<div class="loading-overlay" style="grid-column:1/-1;"><div class="spinner"></div></div>`;
+    try {
+      const snap = await getDocs(query(collection(db, "opportunities"), where("status", "==", "published"), orderBy("createdAt", "desc")));
+      allOpps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      applyFilters();
+    } catch(e) {
+      document.getElementById("opp-grid").innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>Could not load opportunities.</p></div>`;
+    }
+  }
+
+  function applyFilters() {
+    const q = document.getElementById("search-input").value.trim().toLowerCase();
+    const cats = [...document.querySelectorAll("input[name='category']:checked")].map(i => i.value);
+    const modes = [...document.querySelectorAll("input[name='mode']:checked")].map(i => i.value);
+    const paids = [...document.querySelectorAll("input[name='paid']:checked")].map(i => i.value);
+    const hideExp = document.getElementById("hide-expired").checked;
+    const sort = document.getElementById("sort-select").value;
+
+    filtered = allOpps.filter(o => {
+      const now = Date.now();
+      const deadline = o.deadline ? (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) : null;
+      const expired = deadline && deadline < now;
+      if (hideExp && expired) return false;
+      if (q && !`${o.title} ${o.organisation} ${o.shortDescription}`.toLowerCase().includes(q)) return false;
+      if (cats.length && !cats.includes(o.category)) return false;
+      if (modes.length && !modes.includes(o.mode)) return false;
+      if (paids.length && !paids.includes(o.paid)) return false;
+      return true;
+    });
+
+    if (sort === "deadline") {
+      filtered.sort((a, b) => {
+        const da = a.deadline ? (a.deadline.toDate ? a.deadline.toDate() : new Date(a.deadline)) : new Date(9999,0);
+        const db2 = b.deadline ? (b.deadline.toDate ? b.deadline.toDate() : new Date(b.deadline)) : new Date(9999,0);
+        return da - db2;
+      });
+    } else if (sort === "alpha") {
+      filtered.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+    }
+
+    currentPage = 1;
+    renderPage();
+  }
+
+  function renderPage() {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const page = filtered.slice(start, start + PAGE_SIZE);
+    document.getElementById("results-count").textContent = `${filtered.length} opportunit${filtered.length === 1 ? 'y' : 'ies'} found`;
+    document.getElementById("opp-grid").innerHTML = page.length
+      ? page.map(o => oppCardHTML(o)).join("")
+      : `<div class="empty-state" style="grid-column:1/-1;"><h3>No opportunities found</h3><p>Try adjusting your filters or search terms.</p></div>`;
+    renderPagination();
+    bindSaveButtons();
+  }
+
+  function oppCardHTML(o) {
+    const deadline = o.deadline ? (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) : null;
+    const expired = deadline && deadline < Date.now();
+    const days = deadline ? Math.ceil((deadline - Date.now()) / 86400000) : null;
+    const dl = deadlineLabel(o.deadline);
+    const saved = savedIds.has(o.id);
+    return `
+    <div class="opp-card ${expired ? 'opp-card-expired' : ''}">
+      ${expired ? '<span class="expired-tag">Expired</span>' : ''}
+      <div class="opp-card-header">
+        <div>
+          <div class="opp-card-title">${o.title || ''}</div>
+          <div class="opp-card-org">${o.organisation || ''}</div>
+        </div>
+      </div>
+      <div class="opp-card-meta">
+        <span class="badge ${categoryBadgeClass(o.category)}">${o.category || ''}</span>
+        <span class="badge ${o.mode === 'Online' ? 'badge-online' : o.mode === 'Offline' ? 'badge-offline' : 'badge-hybrid'}">${o.mode || ''}</span>
+        ${o.paid === 'Free' ? '<span class="badge badge-free">Free</span>' : o.paid === 'Stipend' ? '<span class="badge badge-stipend">Stipend</span>' : o.paid === 'Paid' ? '<span class="badge badge-paid">Paid</span>' : ''}
+      </div>
+      <p class="opp-card-desc">${truncate(o.shortDescription, 110)}</p>
+      <div class="opp-card-deadline ${days !== null && days <= 7 && days >= 0 ? 'urgent' : ''}">${dl}</div>
+      <div class="opp-card-actions">
+        <button class="save-btn ${saved ? 'saved' : ''}" data-id="${o.id}">${saved ? 'Saved' : 'Save'}</button>
+        <a href="opportunity.html?id=${o.id}" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">View Details</a>
+      </div>
+    </div>`;
+  }
+
+  function bindSaveButtons() {
+    document.querySelectorAll(".save-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!currentUser) { window.location.href = "auth/login.html"; return; }
+        const id = btn.dataset.id;
+        const ref = doc(db, "users", currentUser.uid, "savedOpportunities", id);
+        if (savedIds.has(id)) {
+          await deleteDoc(ref);
+          savedIds.delete(id);
+          btn.textContent = "Save"; btn.classList.remove("saved");
+          showToast("Removed from saved.");
+        } else {
+          const opp = allOpps.find(o => o.id === id);
+          await setDoc(ref, { savedAt: new Date(), title: opp?.title, organisation: opp?.organisation, deadline: opp?.deadline || null, status: "Saved" });
+          savedIds.add(id);
+          btn.textContent = "Saved"; btn.classList.add("saved");
+          showToast("Saved to My Opportunities!", "success");
+        }
+      });
+    });
+  }
+
+  function renderPagination() {
+    const total = Math.ceil(filtered.length / PAGE_SIZE);
+    const pg = document.getElementById("pagination");
+    if (total <= 1) { pg.innerHTML = ""; return; }
+    let html = "";
+    if (currentPage > 1) html += `<button class="page-btn" data-p="${currentPage-1}">‹</button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || Math.abs(i - currentPage) <= 1)
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-p="${i}">${i}</button>`;
+      else if (Math.abs(i - currentPage) === 2)
+        html += `<span style="padding:0 0.25rem;color:var(--text-muted);">…</span>`;
+    }
+    if (currentPage < total) html += `<button class="page-btn" data-p="${currentPage+1}">›</button>`;
+    pg.innerHTML = html;
+    pg.querySelectorAll(".page-btn").forEach(b => b.addEventListener("click", () => { currentPage = parseInt(b.dataset.p); renderPage(); window.scrollTo(0,0); }));
+  }
+
+  document.getElementById("search-btn").addEventListener("click", applyFilters);
+  document.getElementById("clear-btn").addEventListener("click", () => {
+    document.getElementById("search-input").value = "";
+    document.querySelectorAll("input[type='checkbox']").forEach(c => { if (c.id !== "hide-expired") c.checked = false; });
+    document.getElementById("hide-expired").checked = true;
+    applyFilters();
+  });
+  document.getElementById("apply-filters").addEventListener("click", applyFilters);
+  document.getElementById("search-input").addEventListener("keydown", e => { if (e.key === "Enter") applyFilters(); });
+</script>
+</body>
+</html>

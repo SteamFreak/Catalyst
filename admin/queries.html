@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Queries — Catalyst Admin</title>
+  <link rel="stylesheet" href="../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">
+      <div class="brand-name">Catalyst<span style="color:var(--pale);">.</span></div>
+      <div class="brand-sub">Admin Panel</div>
+    </div>
+    <nav class="admin-nav">
+      <a href="index.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </a>
+      <a href="opportunities.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Opportunities
+      </a>
+      <a href="queries.html" class="active">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Student Queries
+      </a>
+      <a href="faqs.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        FAQ Management
+      </a>
+      <a href="contact.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+        Contact Info
+      </a>
+      <a href="team.html">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Team
+      </a>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <button class="btn btn-secondary btn-sm btn-full" id="signout-btn">Sign Out</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar"><h1>Student Queries</h1></div>
+    <div class="admin-content">
+      <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+        <div class="search-bar" style="flex:1;min-width:200px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input class="form-input" id="search-input" type="text" placeholder="Search queries…" style="padding-left:2.25rem;" />
+        </div>
+        <select class="form-select" id="filter-status" style="width:160px;">
+          <option value="">All Status</option>
+          <option>New</option><option>Pending</option><option>In Progress</option><option>Responded</option><option>Resolved</option>
+        </select>
+        <select class="form-select" id="filter-category" style="width:200px;">
+          <option value="">All Categories</option>
+          <option>Resume Creation & Review</option>
+          <option>LinkedIn Profile Optimisation</option>
+          <option>Personal Portfolio Development</option>
+          <option>Networking & Outreach Guidance</option>
+          <option>Internship Guidance</option>
+          <option>Research Opportunities</option>
+          <option>Personal Branding</option>
+          <option>Skill Development</option>
+          <option>General Profile Building</option>
+        </select>
+      </div>
+      <div class="admin-table-wrap">
+        <div id="queries-table"><div class="loading-overlay"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- QUERY DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h2 id="modal-subject">Query Detail</h2>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem;font-size:0.875rem;">
+        <div><span style="color:var(--text-muted);font-size:0.78rem;">From</span><div id="d-name" style="font-weight:600;"></div><div id="d-email" style="color:var(--text-muted);font-size:0.8rem;"></div></div>
+        <div><span style="color:var(--text-muted);font-size:0.78rem;">Category</span><div id="d-category" style="font-weight:500;"></div></div>
+        <div><span style="color:var(--text-muted);font-size:0.78rem;">Class</span><div id="d-class"></div></div>
+        <div><span style="color:var(--text-muted);font-size:0.78rem;">Submitted</span><div id="d-date"></div></div>
+      </div>
+      <div style="background:var(--beige);border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;">
+        <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:0.5rem;">Message</p>
+        <p id="d-message" style="font-size:0.875rem;color:var(--text-primary);line-height:1.7;white-space:pre-line;"></p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="d-status">
+          <option>New</option><option>Pending</option><option>In Progress</option><option>Responded</option><option>Resolved</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Response to Student</label>
+        <textarea class="form-textarea" id="d-response" rows="4" placeholder="Write your response here…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Internal Notes (not visible to student)</label>
+        <textarea class="form-textarea" id="d-notes" rows="2" placeholder="Internal notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="modal-close-2">Cancel</button>
+      <button class="btn btn-primary" id="save-query-btn">Save Response</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { requireAdmin, logoutUser } from "../js/auth.js";
+  import { formatDate, showToast } from "../js/utils.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { firebaseConfig } from "../js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  await requireAdmin();
+  document.getElementById("signout-btn").addEventListener("click", logoutUser);
+
+  let allQueries = [], editingId = null;
+
+  async function loadQueries() {
+    const snap = await getDocs(query(collection(db, "queries"), orderBy("createdAt", "desc")));
+    allQueries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable();
+  }
+
+  function renderTable() {
+    const search = document.getElementById("search-input").value.trim().toLowerCase();
+    const statusF = document.getElementById("filter-status").value;
+    const catF = document.getElementById("filter-category").value;
+
+    const items = allQueries.filter(q => {
+      if (statusF && q.status !== statusF) return false;
+      if (catF && q.category !== catF) return false;
+      if (search && !`${q.name} ${q.subject} ${q.email}`.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    const el = document.getElementById("queries-table");
+    if (!items.length) { el.innerHTML = `<div class="empty-state"><p>No queries found.</p></div>`; return; }
+
+    const SC = { New:"status-new", Pending:"status-pending", "In Progress":"status-inprogress", Responded:"status-responded", Resolved:"status-resolved" };
+    el.innerHTML = `<table><thead><tr><th>Name</th><th>Subject</th><th>Category</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+    <tbody>${items.map(q => `<tr>
+      <td style="font-weight:600;">${q.name || ''}</td>
+      <td>${q.subject || ''}</td>
+      <td style="font-size:0.8rem;">${q.category || ''}</td>
+      <td><span class="status-badge ${SC[q.status] || 'status-new'}">${q.status}</span></td>
+      <td style="font-size:0.8rem;">${formatDate(q.createdAt)}</td>
+      <td><button class="btn btn-sm" style="background:var(--beige);border:none;" data-open="${q.id}">Open</button></td>
+    </tr>`).join("")}</tbody></table>`;
+
+    el.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => openQuery(b.dataset.open)));
+  }
+
+  function openQuery(id) {
+    editingId = id;
+    const q = allQueries.find(x => x.id === id);
+    document.getElementById("modal-subject").textContent = q.subject || "Query";
+    document.getElementById("d-name").textContent = q.name || '';
+    document.getElementById("d-email").textContent = q.email || '';
+    document.getElementById("d-category").textContent = q.category || '';
+    document.getElementById("d-class").textContent = q.class || '—';
+    document.getElementById("d-date").textContent = formatDate(q.createdAt);
+    document.getElementById("d-message").textContent = q.message || '';
+    document.getElementById("d-status").value = q.status || 'New';
+    document.getElementById("d-response").value = q.response || '';
+    document.getElementById("d-notes").value = q.internalNotes || '';
+    document.getElementById("modal-overlay").classList.add("open");
+  }
+
+  document.getElementById("save-query-btn").addEventListener("click", async () => {
+    const status = document.getElementById("d-status").value;
+    const response = document.getElementById("d-response").value.trim();
+    const notes = document.getElementById("d-notes").value.trim();
+    try {
+      await updateDoc(doc(db, "queries", editingId), { status, response, internalNotes: notes, updatedAt: serverTimestamp() });
+      const q = allQueries.find(x => x.id === editingId);
+      if (q) { q.status = status; q.response = response; q.internalNotes = notes; }
+      document.getElementById("modal-overlay").classList.remove("open");
+      renderTable();
+      showToast("Query updated.", "success");
+    } catch(e) { showToast("Save failed.", "error"); }
+  });
+
+  const closeModal = () => document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  document.getElementById("modal-close-2").addEventListener("click", closeModal);
+  document.getElementById("modal-overlay").addEventListener("click", e => { if (e.target === document.getElementById("modal-overlay")) closeModal(); });
+  document.getElementById("search-input").addEventListener("input", renderTable);
+  document.getElementById("filter-status").addEventListener("change", renderTable);
+  document.getElementById("filter-category").addEventListener("change", renderTable);
+
+  loadQueries();
+</script>
+</body>
+</html>

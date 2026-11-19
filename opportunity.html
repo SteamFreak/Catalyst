@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opportunity — Catalyst</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .opp-detail-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start; }
+    .opp-main { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; }
+    .opp-sidebar { display: flex; flex-direction: column; gap: 1rem; position: sticky; top: 80px; }
+    .opp-sidebar-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; }
+    .detail-section { margin-bottom: 1.75rem; padding-bottom: 1.75rem; border-bottom: 1px solid var(--border); }
+    .detail-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .detail-section h3 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .detail-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; }
+    .detail-row .label { color: var(--text-muted); min-width: 130px; flex-shrink: 0; }
+    .detail-row .value { color: var(--text-primary); font-weight: 500; }
+    @media (max-width: 900px) { .opp-detail-layout { grid-template-columns: 1fr; } .opp-sidebar { position: static; } }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" id="main-navbar"></nav>
+
+<div style="background:var(--beige);padding:0.75rem 0;border-bottom:1px solid var(--border);">
+  <div class="container">
+    <a href="discover.html" style="font-size:0.83rem;color:var(--text-secondary);">← Back to Discover</a>
+  </div>
+</div>
+
+<section class="section-sm">
+  <div class="container" id="opp-content">
+    <div class="loading-overlay"><div class="spinner"></div></div>
+  </div>
+</section>
+
+<footer class="footer" id="main-footer"></footer>
+
+<script type="module">
+  import { initNavbar } from "./js/navbar.js";
+  import { initFooter } from "./js/footer.js";
+  import { auth } from "./js/auth.js";
+  import { categoryBadgeClass, formatDate, deadlineLabel, showToast } from "./js/utils.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { firebaseConfig } from "./js/firebase-config.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  initNavbar("", "");
+  initFooter("");
+
+  const id = new URLSearchParams(location.search).get("id");
+  if (!id) { document.getElementById("opp-content").innerHTML = `<div class="empty-state"><h3>Opportunity not found.</h3></div>`; }
+
+  let currentUser = null, isSaved = false;
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user && user.emailVerified ? user : null;
+    if (currentUser && id) {
+      const snap = await getDoc(doc(db, "users", currentUser.uid, "savedOpportunities", id));
+      isSaved = snap.exists();
+    }
+    if (id) loadOpp();
+  });
+
+  async function loadOpp() {
+    try {
+      const snap = await getDoc(doc(db, "opportunities", id));
+      if (!snap.exists() || snap.data().status !== "published") {
+        document.getElementById("opp-content").innerHTML = `<div class="empty-state"><h3>Opportunity not found or no longer available.</h3></div>`;
+        return;
+      }
+      const o = snap.data();
+      document.title = `${o.title} — Catalyst`;
+      const deadline = o.deadline ? (o.deadline.toDate ? o.deadline.toDate() : new Date(o.deadline)) : null;
+      const expired = deadline && deadline < Date.now();
+      const days = deadline ? Math.ceil((deadline - Date.now()) / 86400000) : null;
+
+      document.getElementById("opp-content").innerHTML = `
+      <div class="opp-detail-layout">
+        <div class="opp-main">
+          <div style="margin-bottom:1.25rem;">
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem;">
+              <span class="badge ${categoryBadgeClass(o.category)}">${o.category || ''}</span>
+              <span class="badge ${o.mode === 'Online' ? 'badge-online' : o.mode === 'Offline' ? 'badge-offline' : 'badge-hybrid'}">${o.mode || ''}</span>
+              ${o.paid === 'Free' ? '<span class="badge badge-free">Free</span>' : o.paid === 'Stipend' ? '<span class="badge badge-stipend">Stipend</span>' : o.paid === 'Paid' ? '<span class="badge badge-paid">Paid</span>' : ''}
+              ${expired ? '<span class="badge" style="background:#fee2e2;color:#991b1b;">Expired</span>' : ''}
+            </div>
+            <h1 style="font-size:1.6rem;font-weight:700;color:var(--midnight);margin-bottom:0.35rem;">${o.title || ''}</h1>
+            <p style="font-size:1rem;color:var(--text-secondary);font-weight:500;">${o.organisation || ''}</p>
+          </div>
+
+          <div class="detail-section">
+            <h3>About the Programme</h3>
+            <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.75;white-space:pre-line;">${o.description || o.shortDescription || ''}</p>
+          </div>
+
+          <div class="detail-section">
+            <h3>Eligibility & Requirements</h3>
+            ${row("Eligible Classes", o.eligibleClasses)} ${row("Academic Stream", o.stream)} ${row("Age Restriction", o.ageRestriction)} ${row("Requirements", o.requirements)} ${row("Required Skills", o.skills)}
+          </div>
+
+          <div class="detail-section">
+            <h3>Dates & Duration</h3>
+            ${row("Start Date", formatDate(o.startDate))} ${row("End Date", formatDate(o.endDate))} ${row("Duration", o.duration)} ${row("Application Deadline", deadline ? `<strong class="${days !== null && days <= 7 && days >= 0 ? 'urgent' : ''}">${deadlineLabel(o.deadline)}</strong>` : '—')}
+          </div>
+
+          <div class="detail-section">
+            <h3>Fees & Financial Information</h3>
+            ${row("Paid / Free", o.paid)} ${row("Fees", o.fees || '—')} ${row("Stipend", o.stipend || '—')}
+          </div>
+
+          <div class="detail-section">
+            <h3>Location & Delivery</h3>
+            ${row("Mode", o.mode)} ${row("Location", o.location || '—')}
+          </div>
+
+          ${o.additionalInfo ? `<div class="detail-section"><h3>Additional Information</h3><p style="font-size:0.875rem;color:var(--text-secondary);line-height:1.7;white-space:pre-line;">${o.additionalInfo}</p></div>` : ''}
+
+          <div class="detail-section">
+            <h3>Application</h3>
+            <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:1rem;">Applications are submitted directly on the official website. Catalyst does not process applications.</p>
+            ${o.applicationUrl ? `<a href="${o.applicationUrl}" target="_blank" rel="noopener" class="btn btn-primary">Apply on Official Website ↗</a>` : '<p style="font-size:0.875rem;color:var(--text-muted);">No application link provided.</p>'}
+          </div>
+        </div>
+
+        <div class="opp-sidebar">
+          <div class="opp-sidebar-card">
+            <button class="btn ${isSaved ? 'btn-secondary' : 'btn-outline'} btn-full" id="save-btn" style="margin-bottom:0.75rem;">${isSaved ? '♥ Saved' : '♡ Save Opportunity'}</button>
+            ${o.applicationUrl ? `<a href="${o.applicationUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-full">Apply Now ↗</a>` : ''}
+          </div>
+          <div class="opp-sidebar-card">
+            <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:0.75rem;">Quick Info</p>
+            ${row("Deadline", deadlineLabel(o.deadline))}
+            ${row("Mode", o.mode)}
+            ${row("Category", o.category)}
+            ${row("Duration", o.duration || '—')}
+          </div>
+          ${o.contactDetails ? `<div class="opp-sidebar-card"><p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:0.75rem;">Contact</p><p style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-line;">${o.contactDetails}</p></div>` : ''}
+          ${o.sourceUrl ? `<div class="opp-sidebar-card"><p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:0.5rem;">Source</p><a href="${o.sourceUrl}" target="_blank" rel="noopener" style="font-size:0.83rem;color:var(--steel);word-break:break-all;">Verify this opportunity ↗</a></div>` : ''}
+        </div>
+      </div>`;
+
+      document.getElementById("save-btn")?.addEventListener("click", async () => {
+        if (!currentUser) { window.location.href = "auth/login.html"; return; }
+        const ref = doc(db, "users", currentUser.uid, "savedOpportunities", id);
+        if (isSaved) {
+          await deleteDoc(ref);
+          isSaved = false;
+          document.getElementById("save-btn").textContent = "♡ Save Opportunity";
+          document.getElementById("save-btn").className = "btn btn-outline btn-full";
+          showToast("Removed from saved.");
+        } else {
+          await setDoc(ref, { savedAt: new Date(), title: o.title, organisation: o.organisation, deadline: o.deadline || null, status: "Saved" });
+          isSaved = true;
+          document.getElementById("save-btn").textContent = "♥ Saved";
+          document.getElementById("save-btn").className = "btn btn-secondary btn-full";
+          showToast("Saved to My Opportunities!", "success");
+        }
+      });
+    } catch(e) {
+      document.getElementById("opp-content").innerHTML = `<div class="empty-state"><p>Could not load opportunity.</p></div>`;
+    }
+  }
+
+  function row(label, value) {
+    if (!value || value === '—') return `<div class="detail-row"><span class="label">${label}</span><span class="value" style="color:var(--text-muted);">—</span></div>`;
+    return `<div class="detail-row"><span class="label">${label}</span><span class="value">${value}</span></div>`;
+  }
+</script>
+</body>
+</html>
